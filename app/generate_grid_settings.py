@@ -65,7 +65,8 @@ def calculate_center_price(previous_close, adjustment_pct, upper_2, lower_2):
     return max(lower_2, min(upper_2, center))
 
 
-def write_set_file(filepath, lot_size, center_price, sell_range_pips, buy_range_pips):
+def write_set_file(filepath, lot_size, center_price, sell_range_pips, buy_range_pips, sell_enabled=True):
+    sell_str = 'true' if sell_enabled else 'false'
     content = f"""; === Basic Settings ===
 GridStepPips=5
 UseTakeProfit=true
@@ -73,7 +74,7 @@ LotSize={lot_size}
 GridRange=4
 MagicNumber=8001
 ; === Sell Grid Settings ===
-SellEnabled=true
+SellEnabled={sell_str}
 ; === Buy Grid Settings ===
 BuyEnabled=true
 
@@ -92,6 +93,7 @@ def main():
     adjustment = parse_float_env('CENTER_PRICE_ADJUSTMENT', 0)
     range_percent = parse_float_env('RANGE_PIPS_PERCENT', 1)
     os.makedirs('data/sets/mt5a1', exist_ok=True)
+    os.makedirs('data/sets/mt5a2', exist_ok=True)
     os.makedirs('data/sets/mt5a4', exist_ok=True)
 
     try:
@@ -131,6 +133,10 @@ def main():
         write_set_file(
             'data/sets/mt5a1/grid_lot7.set',
             0.07, rounded_center, sell_range_pips, buy_range_pips
+        )
+        write_set_file(
+            'data/sets/mt5a2/grid_lot1.set',
+            0.01, rounded_center, sell_range_pips, buy_range_pips, sell_enabled=False
         )
         write_set_file(
             'data/sets/mt5a4/grid_lot3.set',
