@@ -1,0 +1,16 @@
+services:
+  dev:
+    # docker compose run --rm dev /bin/bash
+    image: ${REGISTRY}/fx-utils:dev
+    build:
+      context: . 
+      args:
+        apt_cacher: ${APT_CACHER}
+      dockerfile: Dockerfile.dev
+    environment:
+      - DISCORD_WEBHOOK_URL
+      - CENTER_PRICE_ADJUSTMENT=0.35
+      - RANGE_PIPS_PERCENT=1
+    tty: true
+    volumes:
+      - ./app:/app:delegated
