@@ -149,7 +149,7 @@ def main():
 
         write_account_sets('1_main', rounded_center, sell_range_pips, buy_range_pips)
 
-        boj_center_price = rounded_center + sell_range_pips / 100
+        boj_center_price = round_to_2_or_7(rounded_center + sell_range_pips / 100)
         boj_buy_range_pips = buy_range_pips + sell_range_pips
 
         print(f"\n--- BOJ ---")
