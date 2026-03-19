@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 """
 Generate grid settings .set files for MT4/MT5 EA.
-Creates two files with different LotSize values (0.07 and 0.03).
 """
 
 import os
 import sqlite3
 from datetime import date
+
+MAGIC_MAIN = 8001
+MAGIC_HOLD = 8002
+
+ACCOUNTS = [
+    {'name': 'mt5a1', 'lot': 0.07},
+    {'name': 'mt5a2', 'lot': 0.01, 'sell_enabled': False},
+    {'name': 'mt5a4', 'lot': 0.03},
+]
 
 
 def parse_float_env(key, default):
@@ -54,8 +62,6 @@ def calculate_bollinger_bands(closes, period=20):
     return {
         'sma': sma,
         'upper_2': sma + (2 * std_dev),
-        'upper_1': sma + (1 * std_dev),
-        'lower_1': sma - (1 * std_dev),
         'lower_2': sma - (2 * std_dev),
     }
 
@@ -65,16 +71,16 @@ def calculate_center_price(previous_close, adjustment_pct, upper_2, lower_2):
     return max(lower_2, min(upper_2, center))
 
 
-def write_set_file(filepath, lot_size, center_price, sell_range_pips, buy_range_pips, sell_enabled=True):
-    sell_str = 'true' if sell_enabled else 'false'
+def write_set_file(filepath, lot_size, center_price, sell_range_pips, buy_range_pips,
+                   sell_enabled=True, use_take_profit=True, magic_number=MAGIC_MAIN):
     content = f"""; === Basic Settings ===
 GridStepPips=5
-UseTakeProfit=true
+UseTakeProfit={'true' if use_take_profit else 'false'}
 LotSize={lot_size}
 GridRange=4
-MagicNumber=8001
+MagicNumber={magic_number}
 ; === Sell Grid Settings ===
-SellEnabled={sell_str}
+SellEnabled={'true' if sell_enabled else 'false'}
 ; === Buy Grid Settings ===
 BuyEnabled=true
 
@@ -87,14 +93,25 @@ BuyRangePips={buy_range_pips}
     print(f"Written: {filepath}")
 
 
+def write_account_sets(filename, center, sell_pips, buy_pips,
+                       sell_enabled=True, use_take_profit=True, magic=MAGIC_MAIN):
+    for acct in ACCOUNTS:
+        effective_sell = sell_enabled and acct.get('sell_enabled', True)
+        write_set_file(
+            f"data/sets/{acct['name']}/{filename}.set",
+            acct['lot'], center, sell_pips, buy_pips,
+            effective_sell, use_take_profit, magic
+        )
+
+
 def main():
     conn = sqlite3.connect('data/db/usdjpy.db')
 
     adjustment = parse_float_env('CENTER_PRICE_ADJUSTMENT', 0)
     range_percent = parse_float_env('RANGE_PIPS_PERCENT', 1)
-    os.makedirs('data/sets/mt5a1', exist_ok=True)
-    os.makedirs('data/sets/mt5a2', exist_ok=True)
-    os.makedirs('data/sets/mt5a4', exist_ok=True)
+
+    for acct in ACCOUNTS:
+        os.makedirs(f"data/sets/{acct['name']}", exist_ok=True)
 
     try:
         rows = fetch_recent_closes(conn, days=20)
@@ -130,18 +147,21 @@ def main():
         print(f"SellRangePips: {sell_range_pips}")
         print(f"BuyRangePips: {buy_range_pips}")
 
-        write_set_file(
-            'data/sets/mt5a1/grid_lot7.set',
-            0.07, rounded_center, sell_range_pips, buy_range_pips
-        )
-        write_set_file(
-            'data/sets/mt5a2/grid_lot1.set',
-            0.01, rounded_center, sell_range_pips, buy_range_pips, sell_enabled=False
-        )
-        write_set_file(
-            'data/sets/mt5a4/grid_lot3.set',
-            0.03, rounded_center, sell_range_pips, buy_range_pips
-        )
+        write_account_sets('1_main', rounded_center, sell_range_pips, buy_range_pips)
+
+        boj_center_price = rounded_center + sell_range_pips / 100
+        boj_buy_range_pips = buy_range_pips + sell_range_pips
+
+        print(f"\n--- BOJ ---")
+        print(f"GridCenterPrice: {boj_center_price:.2f}")
+        print(f"SellRangePips: 0")
+        print(f"BuyRangePips: {boj_buy_range_pips}")
+
+        write_account_sets('1_boj', boj_center_price, 0, boj_buy_range_pips, sell_enabled=False)
+
+        print(f"\n--- Hold ---")
+        write_account_sets('2_hold', rounded_center, sell_range_pips, buy_range_pips,
+                           sell_enabled=False, use_take_profit=False, magic=MAGIC_HOLD)
 
     finally:
         conn.close()
