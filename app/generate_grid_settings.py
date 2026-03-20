@@ -79,13 +79,12 @@ UseTakeProfit={'true' if use_take_profit else 'false'}
 LotSize={lot_size}
 GridRange=4
 MagicNumber={magic_number}
+GridCenterPrice={center_price:.2f}
 ; === Sell Grid Settings ===
 SellEnabled={'true' if sell_enabled else 'false'}
+SellRangePips={sell_range_pips}
 ; === Buy Grid Settings ===
 BuyEnabled=true
-
-GridCenterPrice={center_price:.2f}
-SellRangePips={sell_range_pips}
 BuyRangePips={buy_range_pips}
 """
     with open(filepath, 'w') as f:
