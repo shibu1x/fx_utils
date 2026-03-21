@@ -9,8 +9,9 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       - DISCORD_WEBHOOK_URL
-      - CENTER_PRICE_ADJUSTMENT=0.35
-      - RANGE_PIPS_PERCENT=1
+      - GRID_CENTER_ADJUSTMENT=1
+      - GRID_RANGE=1
+      - GRID_CENTER_MAX=160
     tty: true
     volumes:
       - ./app:/app:delegated

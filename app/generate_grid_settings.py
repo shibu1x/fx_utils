@@ -106,8 +106,10 @@ def write_account_sets(filename, center, sell_pips, buy_pips,
 def main():
     conn = sqlite3.connect('data/db/usdjpy.db')
 
-    adjustment = parse_float_env('CENTER_PRICE_ADJUSTMENT', 0)
-    range_percent = parse_float_env('RANGE_PIPS_PERCENT', 1)
+    adjustment = parse_float_env('GRID_CENTER_ADJUSTMENT', 0)
+    range_percent = parse_float_env('GRID_RANGE', 1)
+    center_price_max_str = os.environ.get('GRID_CENTER_MAX')
+    center_price_max = float(center_price_max_str) if center_price_max_str else None
 
     for acct in ACCOUNTS:
         os.makedirs(f"data/sets/{acct['name']}", exist_ok=True)
@@ -132,13 +134,15 @@ def main():
         center_price = calculate_center_price(
             previous_close, adjustment, bands['upper_2'], bands['lower_2']
         )
-        rounded_center = round_to_2_or_7(center_price)
+        if center_price_max is not None:
+            center_price = min(center_price, center_price_max)
 
-        adjustment_price = previous_close * adjustment / 100
+        adjustment_price = center_price - previous_close
         adjustment_pips = round(adjustment_price * 100)
         base_pips = round(previous_close * range_percent)
         sell_range_pips = base_pips - adjustment_pips
         buy_range_pips = base_pips + adjustment_pips
+        rounded_center = round_to_2_or_7(center_price)
 
         print(f"Date: {previous_date}")
         print(f"Previous Close: {previous_close:.2f}")
@@ -147,16 +151,6 @@ def main():
         print(f"BuyRangePips: {buy_range_pips}")
 
         write_account_sets('1_main', rounded_center, sell_range_pips, buy_range_pips)
-
-        boj_center_price = round_to_2_or_7(rounded_center + sell_range_pips / 100)
-        boj_buy_range_pips = buy_range_pips + sell_range_pips
-
-        print(f"\n--- BOJ ---")
-        print(f"GridCenterPrice: {boj_center_price:.2f}")
-        print(f"SellRangePips: 0")
-        print(f"BuyRangePips: {boj_buy_range_pips}")
-
-        write_account_sets('1_boj', boj_center_price, 0, boj_buy_range_pips, sell_enabled=False)
 
         print(f"\n--- Hold ---")
         write_account_sets('2_hold', rounded_center, sell_range_pips, buy_range_pips,
