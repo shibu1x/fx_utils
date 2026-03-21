@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fetch USD/JPY price data and send to Discord.
+Fetch USD/JPY price data and send Bollinger Bands to Discord.
 Includes previous day's close and Bollinger Bands (1 sigma and 2 sigma).
 """
 
@@ -9,15 +9,6 @@ import os
 import sqlite3
 import urllib.request
 from datetime import date
-
-
-def parse_float_env(key, default):
-    value_str = os.environ.get(key, str(default))
-    try:
-        return float(value_str)
-    except ValueError:
-        print(f"Warning: Invalid {key} value '{value_str}', using {default}")
-        return float(default)
 
 
 def round_to_2_or_7(value):
@@ -133,32 +124,9 @@ def calculate_bollinger_bands(closes, period=20):
     }
 
 
-def calculate_center_price(previous_close, adjustment_pct, upper_2, lower_2):
-    """
-    Calculate center price with bounds.
-
-    Center price = previous close * (1 + adjustment%), bounded by Bollinger Bands ±2σ.
-
-    Args:
-        previous_close: Previous day's close price
-        adjustment_pct: Adjustment percentage from environment variable (e.g. 0.4 means +0.4%)
-        upper_2: Bollinger Band +2σ (upper bound)
-        lower_2: Bollinger Band -2σ (lower bound)
-
-    Returns:
-        float: Center price bounded by ±2σ
-    """
-    center = previous_close * (1 + adjustment_pct / 100)
-    # Apply bounds: lower_2 <= center <= upper_2
-    return max(lower_2, min(upper_2, center))
-
-
 def main():
     """Main function to fetch prices and send to Discord."""
     conn = sqlite3.connect('data/db/usdjpy.db')
-
-    adjustment = parse_float_env('CENTER_PRICE_ADJUSTMENT', 0)
-    range_percent = parse_float_env('RANGE_PIPS_PERCENT', 1)
 
     try:
         # Fetch recent close prices
@@ -212,34 +180,11 @@ def main():
             if not close_added:
                 band_lines.append(f"  Close:    {rounded_close:.2f}")
 
-            # Calculate center price
-            center_price = calculate_center_price(
-                previous_close, adjustment, bands['upper_2'], bands['lower_2']
-            )
-            rounded_center = round_to_2_or_7(center_price)
-
-            adjustment_price = previous_close * adjustment / 100
-            adjustment_pips = round(adjustment_price * 100)
-            base_pips = round(previous_close * range_percent)
-            sell_range_pips = base_pips - adjustment_pips
-            buy_range_pips = base_pips + adjustment_pips
-
             lines = [
                 f"**USD/JPY Daily Report** ({previous_date})",
                 f"",
                 f"**Bollinger Bands (20, 1σ/2σ)**",
-            ] + band_lines + [
-                f"",
-                f"**Center Price**",
-                f"  Center:     {rounded_center:.2f}",
-                f"  Adjustment: {adjustment:+.2f}% ({adjustment_price:+.2f})",
-                f"",
-                f"```",
-                f"GridCenterPrice={rounded_center:.2f}",
-                f"SellRangePips={sell_range_pips}",
-                f"BuyRangePips={buy_range_pips}",
-                f"```",
-            ]
+            ] + band_lines
         else:
             lines = [
                 f"**USD/JPY Daily Report** ({previous_date})",
