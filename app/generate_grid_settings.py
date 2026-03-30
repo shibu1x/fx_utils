@@ -11,9 +11,9 @@ MAGIC_MAIN = 8001
 MAGIC_HOLD = 8002
 
 ACCOUNTS = [
-    {'name': 'mt5a1', 'lot': 0.07},
-    {'name': 'mt5a2', 'lot': 0.01, 'sell_enabled': False},
-    {'name': 'mt5a4', 'lot': 0.03},
+    {'name': 'exness', 'lot': 0.07},
+    {'name': 'hfm',    'lot': 0.03},
+    {'name': 'oanda',  'lot': 0.01, 'sell_enabled': False},
 ]
 
 
