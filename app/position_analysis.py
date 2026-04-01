@@ -182,7 +182,7 @@ def print_analysis_results(results: Dict, file_name: str):
 
 def main():
     """Main entry point"""
-    data_dir = Path(__file__).parent / "data" / "pos"
+    data_dir = Path("/data/input/pos")
     target_files = ["exness.txt", "hfm.txt"]
 
     for filename in target_files:

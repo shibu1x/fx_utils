@@ -126,7 +126,7 @@ def calculate_bollinger_bands(closes, period=20):
 
 def main():
     """Main function to fetch prices and send to Discord."""
-    conn = sqlite3.connect('data/db/usdjpy.db')
+    conn = sqlite3.connect('/data/db/usdjpy.db')
 
     try:
         # Fetch recent close prices

@@ -97,14 +97,14 @@ def write_account_sets(filename, center, sell_pips, buy_pips,
     for acct in ACCOUNTS:
         effective_sell = sell_enabled and acct.get('sell_enabled', True)
         write_set_file(
-            f"data/sets/{acct['name']}/{filename}.set",
+            f"/data/output/sets/{acct['name']}/{filename}.set",
             acct['lot'], center, sell_pips, buy_pips,
             effective_sell, use_take_profit, magic
         )
 
 
 def main():
-    conn = sqlite3.connect('data/db/usdjpy.db')
+    conn = sqlite3.connect('/data/db/usdjpy.db')
 
     adjustment = parse_float_env('GRID_CENTER_ADJUSTMENT', 0)
     range_percent = parse_float_env('GRID_RANGE', 1)
@@ -112,7 +112,7 @@ def main():
     center_price_max = float(center_price_max_str) if center_price_max_str else None
 
     for acct in ACCOUNTS:
-        os.makedirs(f"data/sets/{acct['name']}", exist_ok=True)
+        os.makedirs(f"/data/output/sets/{acct['name']}", exist_ok=True)
 
     try:
         rows = fetch_recent_closes(conn, days=20)

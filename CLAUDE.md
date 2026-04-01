@@ -21,16 +21,18 @@ task build                             # production build
 | `daily_price_notify.py` | Fetch latest price + Bollinger Bands, send to Discord |
 | `generate_grid_settings.py` | Generate MT4/MT5 EA grid `.set` files from recent price data |
 | `position_analysis.py` | Analyze MT5 positions (avg execution price for buy/sell) |
+| `margin_calc.py` | Calculate required margin for USD/JPY grid trading |
 
 ## Directory Structure
 
 ```
-app/data/
-  db/usdjpy.db       # SQLite database
-  pos/exness.txt     # MT5 position data (Exness)
-  pos/hfm.txt        # MT5 position data (HFM)
-  sets/mt5a1/        # Generated .set files
-  sets/mt5a4/        # Generated .set files
+data/
+  db/usdjpy.db          # SQLite database
+  input/pos/exness.txt  # MT5 position data (Exness)
+  input/pos/hfm.txt     # MT5 position data (HFM)
+  output/sets/exness/   # Generated .set files
+  output/sets/hfm/      # Generated .set files
+  output/sets/oanda/    # Generated .set files
 ```
 
 ## Database Schema (`app/data/db/usdjpy.db`)
@@ -43,5 +45,4 @@ app/data/
 ## Key Details
 
 - Timestamps stored in UTC (timezone-aware via pytz)
-- Fetch period: `start`/`end` params in `fetch_usdjpy_hourly()` (currently 2024-04-01 to 2025-12-22)
-- Yahoo Finance intraday data limited to ~730 days
+- Fetch period: `start` param in `fetch_usdjpy_hourly()` (Yahoo Finance intraday data limited to ~730 days)

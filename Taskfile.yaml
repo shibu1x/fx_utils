@@ -13,6 +13,7 @@ tasks:
           VERSION: latest
   amd:
     internal: true
+    dir: app
     cmds:
       - | 
         docker buildx build \
@@ -25,6 +26,7 @@ tasks:
 
   arm:
     internal: true
+    dir: app
     cmds:
       - | 
         docker buildx build \

@@ -216,8 +216,8 @@ def main():
 
     # Save to SQLite
     print("\nSaving to database...")
-    os.makedirs('data/db', exist_ok=True)
-    conn = sqlite3.connect('data/db/usdjpy.db')
+    os.makedirs('/data/db', exist_ok=True)
+    conn = sqlite3.connect('/data/db/usdjpy.db')
 
     try:
         create_tables(conn)
