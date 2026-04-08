@@ -21,7 +21,7 @@ task build                             # production build
 | `daily_price_notify.py` | Fetch latest price + Bollinger Bands, send to Discord |
 | `generate_grid_settings.py` | Generate MT4/MT5 EA grid `.set` files from recent price data |
 | `position_analysis.py` | Analyze MT5 positions (avg execution price for buy/sell) |
-| `margin_calc.py` | Calculate required margin for USD/JPY grid trading |
+| `grid_calc.py` | Calculate required margin and unrealized P&L for USD/JPY grid trading |
 
 ## Directory Structure
 

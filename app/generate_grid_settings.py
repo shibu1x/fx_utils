@@ -8,12 +8,11 @@ import sqlite3
 from datetime import date
 
 MAGIC_MAIN = 8001
-MAGIC_HOLD = 8002
 
 ACCOUNTS = [
-    {'name': 'exness', 'lot': 0.07},
-    {'name': 'hfm',    'lot': 0.03},
-    {'name': 'oanda',  'lot': 0.01, 'sell_enabled': False},
+    {'name': 'exness',     'lot': 0.07},
+    {'name': 'hfm',        'lot': 0.03},
+    {'name': 'ic_markets', 'lot': 0.02, 'sell_enabled': False},
 ]
 
 
@@ -151,10 +150,6 @@ def main():
         print(f"BuyRangePips: {buy_range_pips}")
 
         write_account_sets('1_main', rounded_center, sell_range_pips, buy_range_pips)
-
-        print(f"\n--- Hold ---")
-        write_account_sets('2_hold', rounded_center, sell_range_pips, buy_range_pips,
-                           sell_enabled=False, use_take_profit=False, magic=MAGIC_HOLD)
 
     finally:
         conn.close()
