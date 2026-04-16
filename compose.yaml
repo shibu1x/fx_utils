@@ -6,11 +6,12 @@ services:
       context: ./app
       dockerfile: Dockerfile.dev
     environment:
-      - DISCORD_WEBHOOK_URL
-      - GRID_CENTER_ADJUSTMENT=1
-      - GRID_RANGE=1
-      - GRID_CENTER_MAX=160
+      DISCORD_WEBHOOK_URL: 
+      ACCOUNTS: exness:0.07,ic_markets:0.03:false
+      GRID_CENTER_ADJUSTMENT: 1
+      GRID_RANGE: 1
+      GRID_CENTER_MAX: 160
     tty: true
     volumes:
-      - ./app:/app:delegated
-      - ./data:/data:delegated
+      - "./app:/app"
+      - "./data:/data"

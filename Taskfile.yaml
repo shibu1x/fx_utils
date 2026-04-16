@@ -11,6 +11,7 @@ tasks:
       - task: amd
         vars:
           VERSION: latest
+      - say -v Samantha "The Docker build is complete."
   amd:
     internal: true
     dir: app
