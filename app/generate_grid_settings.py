@@ -137,6 +137,8 @@ def main():
     range_percent = parse_float_env('GRID_RANGE', 1)
     center_price_max_str = os.environ.get('GRID_CENTER_MAX')
     center_price_max = float(center_price_max_str) if center_price_max_str else None
+    center_price_min_str = os.environ.get('GRID_CENTER_MIN')
+    center_price_min = float(center_price_min_str) if center_price_min_str else None
 
     for acct in accounts:
         os.makedirs(f"/data/output/sets/{acct['name']}", exist_ok=True)
@@ -163,6 +165,8 @@ def main():
         )
         if center_price_max is not None:
             center_price = min(center_price, center_price_max)
+        if center_price_min is not None:
+            center_price = max(center_price, center_price_min)
 
         adjustment_price = center_price - previous_close
         adjustment_pips = round(adjustment_price * 100)

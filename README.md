@@ -11,7 +11,7 @@ docker compose run --rm dev python <script_name>.py
 ### margin_calc.py
 
 ```bash
-docker compose run --rm dev python margin_calc.py \
+docker compose run --rm dev python grid_calc.py \
   --upper 152.00 --lower 148.00 --lot 0.07 --rate 148.00
 ```
 

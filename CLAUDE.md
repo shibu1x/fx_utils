@@ -22,7 +22,7 @@ task build                             # production build
 | `generate_grid_settings.py` | Generate MT4/MT5 EA grid `.set` files from recent price data |
 | `position_analysis.py` | Analyze MT5 positions (avg execution price for buy/sell) |
 | `grid_calc.py` | Calculate required margin and unrealized P&L for USD/JPY grid trading |
-| `account_manager.py` | Import account records (Deposit/Withdrawal/Closed P&L/Equity) from CSV into SQLite |
+| `account_manager.py` | Import account records (Deposit/Withdrawal/Closed P&L/Equity) from TSV into SQLite |
 
 ## Directory Structure
 
@@ -30,7 +30,7 @@ task build                             # production build
 data/
   db/usdjpy.db            # USD/JPY price database
   db/accounts.db          # Account records database
-  input/account/data.csv  # Account records input (CSV)
+  input/account/data.tsv  # Account records input (TSV)
   input/pos/exness.txt    # MT5 position data (Exness)
   input/pos/hfm.txt       # MT5 position data (HFM)
   output/sets/exness/     # Generated .set files
@@ -59,4 +59,4 @@ data/
 
 - Timestamps stored in UTC (timezone-aware via pytz)
 - Fetch period: `start` param in `fetch_usdjpy_hourly()` (Yahoo Finance intraday data limited to ~730 days)
-- `account_manager.py` reads `/data/input/account/data.csv` (header: `account,type,date,amount,note`); date format is `YYYY.MM.DD`; full replace on each run
+- `account_manager.py` reads `/data/input/account/data.tsv` (header: `account\ttype\tdate\tamount\tnote`); date format is `YYYY.MM.DD`; full replace on each run

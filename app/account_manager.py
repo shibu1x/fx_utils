@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Account manager for FX trading accounts.
-
-Tracks Deposit, Withdrawal, Closed Trade P/L, and Equity per account with date.
-Data is imported from /data/input/account/data.csv.
-"""
+"""Import account records from /data/input/account/data.tsv into SQLite."""
 
 import csv
 import os
@@ -12,9 +7,9 @@ import sqlite3
 from datetime import datetime
 
 DB_PATH = '/data/db/accounts.db'
-CSV_PATH = '/data/input/account/data.csv'
+TSV_PATH = '/data/input/account/data.tsv'
 
-RECORD_TYPES = ('deposit', 'withdrawal', 'closed_pnl', 'equity')
+RECORD_TYPES = ('profit', 'equity', 'deposit')
 
 
 def get_conn():
@@ -26,43 +21,41 @@ def get_conn():
 
 def create_tables(conn):
     cursor = conn.cursor()
+    cursor.execute('DROP TABLE IF EXISTS account_records')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS account_records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             account TEXT NOT NULL,
+            record_type TEXT NOT NULL CHECK(record_type IN ('profit', 'equity', 'deposit')),
             date TEXT NOT NULL,
-            record_type TEXT NOT NULL CHECK(record_type IN ('deposit', 'withdrawal', 'closed_pnl', 'equity')),
             amount REAL NOT NULL,
-            note TEXT,
-            created_at TEXT NOT NULL
+            note TEXT
         )
     ''')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_records_account_date ON account_records(account, date)')
     conn.commit()
 
 
-# --- Subcommand handlers ---
-
 def cmd_import(conn):
-    if not os.path.exists(CSV_PATH):
-        raise SystemExit(f"CSV file not found: {CSV_PATH}")
+    if not os.path.exists(TSV_PATH):
+        raise SystemExit(f"TSV file not found: {TSV_PATH}")
 
     rows = []
     errors = []
-    with open(CSV_PATH, newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for i, row in enumerate(reader, start=2):  # line 1 is header
+    with open(TSV_PATH, newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f, delimiter='\t')
+        for i, row in enumerate(reader, start=2):
             account = row.get('account', '').strip()
-            record_type = row.get('type', '').strip()
+            record_type = row.get('type', '').strip().lower()
             date_raw = row.get('date', '').strip()
-            amount_raw = row.get('amount', '').strip()
+            amount_raw = row.get('amount', '').strip().replace(',', '')
             note = row.get('note', '').strip() or None
 
             if not account:
                 errors.append(f"Line {i}: 'account' is empty")
                 continue
             if record_type not in RECORD_TYPES:
-                errors.append(f"Line {i}: invalid type '{record_type}' (must be one of {', '.join(RECORD_TYPES)})")
+                errors.append(f"Line {i}: invalid type '{row.get('type', '').strip()}' (must be one of {', '.join(RECORD_TYPES)})")
                 continue
             try:
                 date = datetime.strptime(date_raw, '%Y.%m.%d').strftime('%Y-%m-%d')
@@ -75,9 +68,6 @@ def cmd_import(conn):
                 errors.append(f"Line {i}: invalid amount '{amount_raw}'")
                 continue
 
-            if record_type == 'withdrawal':
-                amount = -abs(amount)
-
             rows.append((account, record_type, date, amount, note))
 
     if errors:
@@ -86,19 +76,15 @@ def cmd_import(conn):
             print(f"  {e}")
         raise SystemExit("Import aborted.")
 
-    now = datetime.now().isoformat()
     cursor = conn.cursor()
     cursor.execute('DELETE FROM account_records')
-
-    for account, record_type, date, amount, note in rows:
-        cursor.execute(
-            '''INSERT INTO account_records (account, date, record_type, amount, note, created_at)
-               VALUES (?, ?, ?, ?, ?, ?)''',
-            (account, date, record_type, amount, note, now)
-        )
+    cursor.executemany(
+        'INSERT INTO account_records (account, record_type, date, amount, note) VALUES (?, ?, ?, ?, ?)',
+        rows
+    )
+    conn.commit()
 
     accounts = sorted({r[0] for r in rows})
-    conn.commit()
     print(f"Imported {len(rows)} records for {len(accounts)} account(s): {', '.join(accounts)}")
 
 
