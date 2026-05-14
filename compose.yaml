@@ -6,11 +6,18 @@ services:
       context: ./app
       dockerfile: Dockerfile.dev
     environment:
-      DISCORD_WEBHOOK_URL: 
-      ACCOUNTS: exness:0.07,ic_markets:0.03:false
-      GRID_CENTER_ADJUSTMENT: 1
-      GRID_RANGE: 1
-      GRID_CENTER_MAX: 160
+      DISCORD_WEBHOOK_URL:
+      PAIRS: USDJPY,AUDJPY
+      USDJPY_ACCOUNTS: exness:0.07,ic_markets:0.03
+      USDJPY_GRID_CENTER_ADJUSTMENT: 1
+      USDJPY_GRID_RANGE: 2
+      USDJPY_GRID_CENTER_MAX: 157
+      USDJPY_GRID_CENTER_MIN: 152
+      AUDJPY_ACCOUNTS: exness:0.01
+      AUDJPY_MAGIC_NUMBER: 8003
+      AUDJPY_GRID_STEP_PIPS: 4
+      AUDJPY_GRID_CENTER_ADJUSTMENT: 1
+      AUDJPY_GRID_RANGE: 1
     tty: true
     volumes:
       - "./app:/app"

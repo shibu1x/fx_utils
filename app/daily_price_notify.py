@@ -80,12 +80,12 @@ def fetch_recent_closes(conn, days=20):
     today = date.today().isoformat()
     query = """
         SELECT date, close
-        FROM usdjpy_daily
-        WHERE date < ?
+        FROM fx_daily
+        WHERE pair = ? AND date < ?
         ORDER BY date DESC
         LIMIT ?
     """
-    cursor = conn.execute(query, (today, days))
+    cursor = conn.execute(query, ('USDJPY', today, days))
     return cursor.fetchall()
 
 
@@ -126,7 +126,7 @@ def calculate_bollinger_bands(closes, period=20):
 
 def main():
     """Main function to fetch prices and send to Discord."""
-    conn = sqlite3.connect('/data/db/usdjpy.db')
+    conn = sqlite3.connect('/data/db/fx_daily.db')
 
     try:
         # Fetch recent close prices
