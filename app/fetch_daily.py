@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fetch daily OHLC data for multiple FX pairs (USD/JPY, AUD/USD) using yfinance.
+Fetch daily close price for multiple FX pairs (USD/JPY, AUD/USD) using yfinance.
 """
 
 import os
@@ -21,11 +21,7 @@ def create_table(conn):
         CREATE TABLE IF NOT EXISTS fx_daily (
             pair TEXT NOT NULL,
             date TEXT NOT NULL,
-            open REAL NOT NULL,
-            high REAL NOT NULL,
-            low REAL NOT NULL,
             close REAL NOT NULL,
-            created_at TEXT NOT NULL,
             PRIMARY KEY (pair, date)
         )
     ''')
@@ -40,22 +36,18 @@ def fetch_daily(ticker_symbol, start=None):
     return data
 
 
-def save_to_sqlite(pair, data, conn, created_at):
+def save_to_sqlite(pair, data, conn):
     cursor = conn.cursor()
     for index, row in data.iterrows():
         date_str = index.strftime("%Y-%m-%d")
         cursor.execute('''
             INSERT OR REPLACE INTO fx_daily
-            (pair, date, open, high, low, close, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (pair, date, close)
+            VALUES (?, ?, ?)
         ''', (
             pair,
             date_str,
-            float(row["Open"]),
-            float(row["High"]),
-            float(row["Low"]),
             float(row["Close"]),
-            created_at,
         ))
     conn.commit()
     print(f"  Saved {len(data)} records")
@@ -71,7 +63,6 @@ def main():
 
     try:
         create_table(conn)
-        created_at = datetime.now().isoformat()
 
         for pair in PAIRS:
             ticker_symbol = PAIRS[pair]
@@ -81,7 +72,7 @@ def main():
                 print(f"  No data returned")
                 continue
             print(f"  {len(data)} records: {data.index[0].date()} to {data.index[-1].date()}")
-            save_to_sqlite(pair, data, conn, created_at)
+            save_to_sqlite(pair, data, conn)
 
     finally:
         conn.close()

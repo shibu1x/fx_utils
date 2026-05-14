@@ -17,7 +17,7 @@ task build                             # production build
 
 | Script | Description |
 |--------|-------------|
-| `fetch_daily.py` | Fetch daily OHLC for USD/JPY, AUD/JPY and AUD/USD from Yahoo Finance, save to SQLite; optional `--start` |
+| `fetch_daily.py` | Fetch daily close price for USD/JPY, AUD/JPY and AUD/USD from Yahoo Finance, save to SQLite; optional `--start` |
 | `daily_price_notify.py` | Fetch latest USD/JPY price + Bollinger Bands from `fx_daily.db`, send to Discord |
 | `generate_grid_settings.py` | Generate MT4/MT5 EA grid `.set` files for multiple pairs (USD/JPY, AUD/JPY, AUD/USD) from `fx_daily.db` |
 | `position_analysis.py` | Analyze MT5 positions (avg execution price for buy/sell) from all `*.txt` in `/data/input/pos/` |
@@ -51,7 +51,7 @@ All variables are pair-prefixed (`{PAIR}` = `USDJPY`, `AUDJPY`, `AUDUSD`, etc.).
 
 ```
 data/
-  db/fx_daily.db            # Multi-pair daily OHLC (USD/JPY, AUD/USD via fetch_daily.py)
+  db/fx_daily.db            # Multi-pair daily close price (USD/JPY, AUD/USD via fetch_daily.py)
   db/accounts.db            # Account records database
   input/account/data.tsv    # Account records input (TSV)
   input/pos/<account>.txt   # MT5 position data (one file per account, e.g. exness.txt, icmarkets.txt)
@@ -62,11 +62,10 @@ data/
 
 ### `fx_daily.db`
 
-**fx_daily** — daily OHLC for multiple pairs, PK: `(pair, date)`
+**fx_daily** — daily close price for multiple pairs, PK: `(pair, date)`
 - `pair` TEXT — e.g. `USDJPY`, `AUDUSD`, `AUDJPY`
 - `date` TEXT — YYYY-MM-DD
-- `open`, `high`, `low`, `close` REAL
-- `created_at` TEXT — ISO datetime
+- `close` REAL
 
 ### `accounts.db`
 
