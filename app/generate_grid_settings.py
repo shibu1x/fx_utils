@@ -1,200 +1,188 @@
 #!/usr/bin/env python3
-"""
-Generate grid settings .set files for MT4/MT5 EA.
-Supports multiple FX pairs (USD/JPY, AUD/JPY, AUD/USD) from fx_daily.db.
-"""
+"""Generate MT4/MT5 EA grid .set files for multiple FX pairs from fx_daily.db."""
 
 import os
 import sqlite3
+from dataclasses import dataclass
 from datetime import date
 
 
-def parse_int_env(key, default):
-    value_str = os.environ.get(key, str(default))
-    try:
-        return int(value_str)
-    except ValueError:
-        print(f"Warning: Invalid {key} value '{value_str}', using {default}")
-        return int(default)
+DB_PATH = "/data/db/fx_daily.db"
+OUTPUT_DIR = "/data/output/sets"
 
 
-def parse_float_env(key, default):
-    value_str = os.environ.get(key, str(default))
-    try:
-        return float(value_str)
-    except ValueError:
-        print(f"Warning: Invalid {key} value '{value_str}', using {default}")
-        return float(default)
+def pip_factor(pair: str) -> int:
+    return 100 if pair.upper().endswith("JPY") else 10000
 
 
-def parse_accounts_env(key, default):
-    """
-    Parse ACCOUNTS env var. Format: name:lot[:sell_enabled] comma-separated.
-    Example: exness:0.07,hfm:0.03,ic_markets:0.02:false
-    """
-    value_str = os.environ.get(key)
-    if not value_str:
-        return default
-    accounts = []
-    for entry in value_str.split(','):
-        parts = entry.strip().split(':')
-        if len(parts) < 2:
-            print(f"Warning: Invalid ACCOUNTS entry '{entry}', skipping")
-            continue
-        acct = {'name': parts[0], 'lot': float(parts[1])}
-        if len(parts) >= 3:
-            acct['sell_enabled'] = parts[2].lower() not in ('false', '0', 'no')
-        accounts.append(acct)
-    return accounts
+def price_to_pips(price: float, pair: str) -> int:
+    return round(price * pip_factor(pair))
 
 
-def is_jpy_pair(pair):
-    return pair.upper().endswith('JPY')
+def pips_to_price(pips: int, pair: str) -> float:
+    return pips / pip_factor(pair)
 
 
-def round_to_5pip(pips):
-    """Round down to nearest 5-pip boundary (offset +2)."""
-    q = pips // 5
-    return q * 5 + 2
+def format_price(price: float, pair: str) -> str:
+    return f"{price:.2f}" if pair.upper().endswith("JPY") else f"{price:.4f}"
 
 
-def round_to_4pip(pips):
-    """Round down to nearest valid value: ones digit in {1,5,9} when tens is even, {3,7} when tens is odd."""
-    return (pips - 1) // 4 * 4 + 1
-
-
-def pips_to_price(pips, pair):
-    if is_jpy_pair(pair):
-        return pips / 100
-    return pips / 10000
-
-
-def round_center_price(pips, grid_step_pips):
-    if grid_step_pips == 5:
-        return round_to_5pip(pips)
-    if grid_step_pips == 4:
-        return round_to_4pip(pips)
+def round_center_pips(pips: int, grid_step: int) -> int:
+    if grid_step == 5:
+        return (pips // 5) * 5 + 2
+    if grid_step == 4:
+        return (pips - 1) // 4 * 4 + 1
     return pips
 
 
-def format_center_price(price, pair):
-    if is_jpy_pair(pair):
-        return f"{price:.2f}"
-    return f"{price:.4f}"
+def env_val(key: str, default, cast):
+    raw = os.environ.get(key, str(default))
+    try:
+        return cast(raw)
+    except (ValueError, TypeError):
+        print(f"Warning: Invalid {key}='{raw}', using {default}")
+        return cast(default)
 
 
-def price_to_pips(price_delta, pair):
-    """Convert price delta to pips."""
-    if is_jpy_pair(pair):
-        return round(price_delta * 100)
-    return round(price_delta * 10000)
+@dataclass
+class Account:
+    name: str
+    lot: float
+    sell_enabled: bool = True
+
+    @classmethod
+    def parse(cls, entry: str) -> "Account | None":
+        parts = entry.strip().split(":")
+        if len(parts) < 2:
+            print(f"Warning: Invalid account entry '{entry}', skipping")
+            return None
+        sell_enabled = parts[2].lower() not in ("false", "0", "no") if len(parts) >= 3 else True
+        return cls(name=parts[0], lot=float(parts[1]), sell_enabled=sell_enabled)
 
 
-def fetch_previous_close(conn, pair):
-    today = date.today().isoformat()
-    cursor = conn.execute(
-        "SELECT date, close FROM fx_daily WHERE pair = ? AND date < ? ORDER BY date DESC LIMIT 1",
-        (pair, today)
-    )
-    return cursor.fetchone()
+@dataclass
+class PairConfig:
+    pair: str
+    magic_number: int
+    grid_step_pips: int
+    center_adjustment: float
+    grid_range: float
+    center_max: float | None
+    center_min: float | None
+    accounts: list[Account]
 
-
-def write_set_file(filepath, lot_size, center_price, sell_range_pips, buy_range_pips,
-                   pair, sell_enabled=True, use_take_profit=True, magic_number=8001, grid_step_pips=5):
-    content = f"""; === Basic Settings ===
-GridStepPips={grid_step_pips}
-UseTakeProfit={'true' if use_take_profit else 'false'}
-UseStopOrders=false
-LotSize={lot_size}
-MagicNumber={magic_number}
-GridCenterPrice={format_center_price(center_price, pair)}
-; === Sell Grid Settings ===
-SellEnabled={'true' if sell_enabled else 'false'}
-SellRangePips={sell_range_pips}
-; === Buy Grid Settings ===
-BuyEnabled=true
-BuyRangePips={buy_range_pips}
-"""
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    with open(filepath, 'w') as f:
-        f.write(content)
-    print(f"Written: {filepath}")
-
-
-def get_accounts_for_pair(pair):
-    return parse_accounts_env(f'{pair}_ACCOUNTS', [])
-
-
-def process_pair(conn, pair):
-    row = fetch_previous_close(conn, pair)
-    if not row:
-        print(f"Error: No data for {pair}")
-        return
-
-    previous_date, previous_close = row
-
-    magic = parse_int_env(f'{pair}_MAGIC_NUMBER', 8001)
-    grid_step_pips = parse_int_env(f'{pair}_GRID_STEP_PIPS', 5)
-    adjustment = parse_float_env(f'{pair}_GRID_CENTER_ADJUSTMENT', 0)
-    range_percent = parse_float_env(f'{pair}_GRID_RANGE', 1)
-
-    previous_close_pips = price_to_pips(previous_close, pair)
-    center_pips = price_to_pips(previous_close * (1 + adjustment / 100), pair)
-
-    base_pips = price_to_pips(previous_close * range_percent / 100, pair)
-
-    center_max_str = os.environ.get(f'{pair}_GRID_CENTER_MAX')
-    center_min_str = os.environ.get(f'{pair}_GRID_CENTER_MIN')
-    if center_max_str:
-        center_pips = min(center_pips, price_to_pips(float(center_max_str), pair))
-        center_pips = max(center_pips, previous_close_pips - base_pips)
-    if center_min_str:
-        center_pips = max(center_pips, price_to_pips(float(center_min_str), pair))
-        center_pips = min(center_pips, previous_close_pips + base_pips)
-
-    adjustment_pips = center_pips - previous_close_pips
-    sell_range_pips = base_pips - adjustment_pips
-    buy_range_pips = base_pips + adjustment_pips
-    rounded_center = pips_to_price(round_center_price(center_pips, grid_step_pips), pair)
-
-    accounts = get_accounts_for_pair(pair)
-
-    print(f"\n[{pair}]")
-    print(f"Date: {previous_date}")
-    print(f"Previous Close: {format_center_price(previous_close, pair)}")
-    print(f"GridCenterPrice: {format_center_price(rounded_center, pair)}")
-    print(f"SellRangePips: {sell_range_pips}")
-    print(f"BuyRangePips: {buy_range_pips}")
-
-    filename = pair.lower()
-    for acct in accounts:
-        effective_sell = acct.get('sell_enabled', True)
-        write_set_file(
-            f"/data/output/sets/{acct['name']}/{filename}.set",
-            acct['lot'], rounded_center, sell_range_pips, buy_range_pips,
-            pair, effective_sell, True, magic, grid_step_pips
+    @classmethod
+    def from_env(cls, pair: str) -> "PairConfig":
+        p = pair.upper()
+        center_max_str = os.environ.get(f"{p}_GRID_CENTER_MAX")
+        center_min_str = os.environ.get(f"{p}_GRID_CENTER_MIN")
+        raw_accounts = os.environ.get(f"{p}_ACCOUNTS", "")
+        accounts = [a for e in raw_accounts.split(",") if e.strip() for a in [Account.parse(e)] if a]
+        return cls(
+            pair=p,
+            magic_number=env_val(f"{p}_MAGIC_NUMBER", 8001, int),
+            grid_step_pips=env_val(f"{p}_GRID_STEP_PIPS", 5, int),
+            center_adjustment=env_val(f"{p}_GRID_CENTER_ADJUSTMENT", 0, float),
+            grid_range=env_val(f"{p}_GRID_RANGE", 1, float),
+            center_max=float(center_max_str) if center_max_str else None,
+            center_min=float(center_min_str) if center_min_str else None,
+            accounts=accounts,
         )
 
 
-def main():
-    conn = sqlite3.connect('/data/db/fx_daily.db')
+@dataclass
+class GridResult:
+    date: str
+    previous_close: float
+    center_price: float
+    sell_range_pips: int
+    buy_range_pips: int
 
-    pairs_str = os.environ.get('PAIRS')
-    if not pairs_str:
+
+def calculate_grid(config: PairConfig, previous_date: str, previous_close: float) -> GridResult:
+    pair = config.pair
+    prev_pips = price_to_pips(previous_close, pair)
+    center_pips = price_to_pips(previous_close * (1 + config.center_adjustment / 100), pair)
+    base_pips = price_to_pips(previous_close * config.grid_range / 100, pair)
+
+    if config.center_max is not None:
+        center_pips = min(center_pips, price_to_pips(config.center_max, pair))
+        center_pips = max(center_pips, prev_pips - base_pips)
+    if config.center_min is not None:
+        center_pips = max(center_pips, price_to_pips(config.center_min, pair))
+        center_pips = min(center_pips, prev_pips + base_pips)
+
+    adjustment_pips = center_pips - prev_pips
+    center_price = pips_to_price(round_center_pips(center_pips, config.grid_step_pips), pair)
+
+    return GridResult(
+        date=previous_date,
+        previous_close=previous_close,
+        center_price=center_price,
+        sell_range_pips=base_pips - adjustment_pips,
+        buy_range_pips=base_pips + adjustment_pips,
+    )
+
+
+def write_set_file(config: PairConfig, account: Account, result: GridResult) -> None:
+    path = f"{OUTPUT_DIR}/{account.name}/{config.pair.lower()}.set"
+    content = (
+        f"; === Basic Settings ===\n"
+        f"GridStepPips={config.grid_step_pips}\n"
+        f"UseTakeProfit=true\n"
+        f"UseStopOrders=false\n"
+        f"LotSize={account.lot}\n"
+        f"MagicNumber={config.magic_number}\n"
+        f"GridCenterPrice={format_price(result.center_price, config.pair)}\n"
+        f"; === Sell Grid Settings ===\n"
+        f"SellEnabled={'true' if account.sell_enabled else 'false'}\n"
+        f"SellRangePips={result.sell_range_pips}\n"
+        f"; === Buy Grid Settings ===\n"
+        f"BuyEnabled=true\n"
+        f"BuyRangePips={result.buy_range_pips}\n"
+    )
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write(content)
+    print(f"Written: {path}")
+
+
+def process_pair(conn: sqlite3.Connection, config: PairConfig) -> None:
+    today = date.today().isoformat()
+    row = conn.execute(
+        "SELECT date, close FROM fx_daily WHERE pair = ? AND date < ? ORDER BY date DESC LIMIT 1",
+        (config.pair, today),
+    ).fetchone()
+    if not row:
+        print(f"Error: No data for {config.pair}")
+        return
+
+    result = calculate_grid(config, *row)
+
+    print(f"\n[{config.pair}]")
+    print(f"Date: {result.date}")
+    print(f"Previous Close: {format_price(result.previous_close, config.pair)}")
+    print(f"GridCenterPrice: {format_price(result.center_price, config.pair)}")
+    print(f"SellRangePips: {result.sell_range_pips}")
+    print(f"BuyRangePips: {result.buy_range_pips}")
+
+    for account in config.accounts:
+        write_set_file(config, account, result)
+
+
+def main() -> None:
+    pairs_str = os.environ.get("PAIRS", "")
+    pairs = [p.strip().upper() for p in pairs_str.split(",") if p.strip()]
+    if not pairs:
         print("Error: PAIRS environment variable is not set")
         return
-    pairs = [p.strip().upper() for p in pairs_str.split(',') if p.strip()]
 
-    for pair in pairs:
-        for acct in get_accounts_for_pair(pair):
-            os.makedirs(f"/data/output/sets/{acct['name']}", exist_ok=True)
+    configs = [PairConfig.from_env(pair) for pair in pairs]
 
-    try:
-        for pair in pairs:
-            process_pair(conn, pair)
-    finally:
-        conn.close()
+    with sqlite3.connect(DB_PATH) as conn:
+        for config in configs:
+            process_pair(conn, config)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
