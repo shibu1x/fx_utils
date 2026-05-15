@@ -146,13 +146,11 @@ def process_pair(conn, pair):
     center_max_str = os.environ.get(f'{pair}_GRID_CENTER_MAX')
     center_min_str = os.environ.get(f'{pair}_GRID_CENTER_MIN')
     if center_max_str:
-        center_max_pips = price_to_pips(float(center_max_str), pair)
-        if previous_close_pips - base_pips <= center_max_pips:
-            center_pips = min(center_pips, center_max_pips)
+        center_pips = min(center_pips, price_to_pips(float(center_max_str), pair))
+        center_pips = max(center_pips, previous_close_pips - base_pips)
     if center_min_str:
-        center_min_pips = price_to_pips(float(center_min_str), pair)
-        if previous_close_pips + base_pips >= center_min_pips:
-            center_pips = max(center_pips, center_min_pips)
+        center_pips = max(center_pips, price_to_pips(float(center_min_str), pair))
+        center_pips = min(center_pips, previous_close_pips + base_pips)
 
     adjustment_pips = center_pips - previous_close_pips
     sell_range_pips = base_pips - adjustment_pips

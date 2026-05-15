@@ -17,7 +17,8 @@ services:
       AUDJPY_MAGIC_NUMBER: 8003
       AUDJPY_GRID_STEP_PIPS: 4
       AUDJPY_GRID_CENTER_ADJUSTMENT: 1
-      AUDJPY_GRID_RANGE: 1
+      AUDJPY_GRID_RANGE: 1.2
+      AUDJPY_GRID_CENTER_MAX: 113
     tty: true
     volumes:
       - "./app:/app"
