@@ -1,9 +1,6 @@
-version: '3'
+version: "3"
 
-env:
-  NAME: fx-utils
-
-dotenv: ['.env']
+dotenv: [".env"]
 
 tasks:
   build:
@@ -12,26 +9,27 @@ tasks:
         vars:
           VERSION: latest
       - say -v Samantha "The Docker build is complete."
+
   amd:
     internal: true
     dir: app
     cmds:
-      - | 
+      - |
         docker buildx build \
           --builder ${AMD64_BUILDER} \
           --platform linux/amd64 \
           --build-arg apt_cacher=${APT_CACHER} \
-          --push -t ${REGISTRY}/${NAME}:{{.VERSION}} .
-      - ssh ${REMOTE_HOST} "docker pull ${REGISTRY}/${NAME}:{{.VERSION}}"
+          --push -t ${REGISTRY}/${APP_NAME}:{{.VERSION}} .
+      - ssh ${REMOTE_HOST} "docker pull ${REGISTRY}/${APP_NAME}:{{.VERSION}}"
     silent: true
 
   arm:
     internal: true
     dir: app
     cmds:
-      - | 
+      - |
         docker buildx build \
           --platform linux/arm64 \
           --build-arg apt_cacher=${APT_CACHER} \
-          --push -t ${REGISTRY}/${NAME}:{{.VERSION}} .
+          --push -t ${REGISTRY}/${APP_NAME}:{{.VERSION}} .
     silent: true

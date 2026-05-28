@@ -9,18 +9,17 @@ assuming positions are taken at 5-pip intervals between upper and lower bounds.
 import argparse
 
 PIP = 0.01
-GRID_STEP = 5 * PIP
 CONTRACT_SIZE = 100_000  # 1 lot = 100,000 USD
 
 
-def build_grid_levels(lower: float, upper: float) -> list[float]:
-    """Return grid price levels from lower to upper at 5-pip intervals."""
+def build_grid_levels(lower: float, upper: float, grid_step: float) -> list[float]:
+    """Return grid price levels from lower to upper at grid_step intervals."""
     levels = []
     price = round(lower * 100) / 100
     upper_rounded = round(upper * 100) / 100
     while price <= upper_rounded + 1e-9:
         levels.append(round(price * 100) / 100)
-        price = round((price + GRID_STEP) * 100) / 100
+        price = round((price + grid_step) * 100) / 100
     return levels
 
 
@@ -116,6 +115,8 @@ def main():
                         help="Grid direction (default: buy)")
     parser.add_argument("--currency", choices=["JPY", "USD"], default="JPY",
                         help="Account base currency (default: JPY)")
+    parser.add_argument("--grid-step", type=int, default=5,
+                        help="Grid step size in pips (default: 5)")
     args = parser.parse_args()
 
     if args.lower >= args.upper:
@@ -123,9 +124,10 @@ def main():
     if args.rate < args.lower or args.rate > args.upper:
         print(f"Warning: rate {args.rate} is outside [{args.lower}, {args.upper}]")
 
-    levels = build_grid_levels(args.lower, args.upper)
+    grid_step = args.grid_step * PIP
+    levels = build_grid_levels(args.lower, args.upper, grid_step)
     print(f"Grid range    : {args.lower:.3f} ~ {args.upper:.3f}")
-    print(f"Grid levels   : {len(levels)} (every 5 pips)")
+    print(f"Grid levels   : {len(levels)} (every {args.grid_step} pips)")
     print(f"Base currency : {args.currency}")
 
     if args.direction in ("buy", "both"):

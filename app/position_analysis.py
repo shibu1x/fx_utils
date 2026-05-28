@@ -150,7 +150,7 @@ def print_item_results(results: Dict):
     size_diff = results['buy']['total_size'] - results['sell']['total_size']
 
     print(f"- Mid: {mid_price:.3f}  Spread: {abs(buy_avg - sell_avg):.3f}  Size diff: {size_diff:+.2f}")
-    print(f"- Profit: {results['overall']['total_profit']:.2f}  Swap: {results['overall']['total_swap']:.2f}")
+    print(f"- Profit: {results['overall']['total_profit']:,.0f}  Swap: {results['overall']['total_swap']:,.0f}")
 
 
 def print_analysis_results(results: List[Dict], file_name: str):

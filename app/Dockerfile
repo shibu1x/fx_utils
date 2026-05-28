@@ -11,7 +11,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN python -m compileall -f . \
-    && chmod +x entrypoint.sh
+RUN python -m compileall -f .
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["python"]

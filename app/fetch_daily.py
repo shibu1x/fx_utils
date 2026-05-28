@@ -3,28 +3,28 @@
 Fetch daily close price for multiple FX pairs (USD/JPY, AUD/USD) using yfinance.
 """
 
-import os
-import yfinance as yf
-import sqlite3
 import argparse
+import os
+import sqlite3
 from datetime import datetime, timedelta
+
+import yfinance as yf
 
 PAIRS = {
     "USDJPY": "JPY=X",
     "AUDUSD": "AUDUSD=X",
-    "AUDJPY": "AUDJPY=X",
 }
 
 
 def create_table(conn):
-    conn.execute('''
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS fx_daily (
             pair TEXT NOT NULL,
             date TEXT NOT NULL,
             close REAL NOT NULL,
             PRIMARY KEY (pair, date)
         )
-    ''')
+    """)
     conn.commit()
 
 
@@ -40,21 +40,26 @@ def save_to_sqlite(pair, data, conn):
     cursor = conn.cursor()
     for index, row in data.iterrows():
         date_str = index.strftime("%Y-%m-%d")
-        cursor.execute('''
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO fx_daily
             (pair, date, close)
             VALUES (?, ?, ?)
-        ''', (
-            pair,
-            date_str,
-            float(row["Close"]),
-        ))
+        """,
+            (
+                pair,
+                date_str,
+                float(row["Close"]),
+            ),
+        )
     conn.commit()
     print(f"  Saved {len(data)} records")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch daily FX OHLC data from Yahoo Finance")
+    parser = argparse.ArgumentParser(
+        description="Fetch daily FX OHLC data from Yahoo Finance"
+    )
     parser.add_argument("--start", type=str, help="Start date (YYYY-MM-DD)")
     args = parser.parse_args()
 
@@ -71,7 +76,9 @@ def main():
             if data.empty:
                 print(f"  No data returned")
                 continue
-            print(f"  {len(data)} records: {data.index[0].date()} to {data.index[-1].date()}")
+            print(
+                f"  {len(data)} records: {data.index[0].date()} to {data.index[-1].date()}"
+            )
             save_to_sqlite(pair, data, conn)
 
     finally:
