@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fetch daily close price for multiple FX pairs (USD/JPY, AUD/USD, NZDUSD) using yfinance.
+Fetch daily close price for multiple FX pairs (USD/JPY, AUD/USD, NZD/USD, GBP/USD) using yfinance.
 """
 
 import argparse
@@ -13,6 +13,7 @@ import yfinance as yf
 PAIRS = {
     "USDJPY": "JPY=X",
     "AUDUSD": "AUDUSD=X",
+    "NZDUSD": "NZDUSD=X",
     "GBPUSD": "GBPUSD=X",
 }
 
@@ -62,7 +63,21 @@ def main():
         description="Fetch daily FX OHLC data from Yahoo Finance"
     )
     parser.add_argument("--start", type=str, help="Start date (YYYY-MM-DD)")
+    parser.add_argument(
+        "pairs",
+        nargs="*",
+        metavar="PAIR",
+        help=f"Pairs to fetch (default: all). Choices: {', '.join(PAIRS.keys())}",
+    )
     args = parser.parse_args()
+
+    if args.pairs:
+        unknown = [p for p in args.pairs if p.upper() not in PAIRS]
+        if unknown:
+            parser.error(f"Unknown pairs: {', '.join(unknown)}. Choices: {', '.join(PAIRS.keys())}")
+        target_pairs = {p.upper(): PAIRS[p.upper()] for p in args.pairs}
+    else:
+        target_pairs = PAIRS
 
     os.makedirs("/data/db", exist_ok=True)
     conn = sqlite3.connect("/data/db/fx_daily.db")
@@ -70,8 +85,7 @@ def main():
     try:
         create_table(conn)
 
-        for pair in PAIRS:
-            ticker_symbol = PAIRS[pair]
+        for pair, ticker_symbol in target_pairs.items():
             print(f"Fetching {pair} ({ticker_symbol})...")
             data = fetch_daily(ticker_symbol, start=args.start)
             if data.empty:
