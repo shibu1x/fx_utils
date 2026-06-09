@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fetch daily close price for multiple FX pairs (USD/JPY, AUD/USD) using yfinance.
+Fetch daily close price for multiple FX pairs (USD/JPY, AUD/USD, NZDUSD) using yfinance.
 """
 
 import argparse
@@ -13,6 +13,7 @@ import yfinance as yf
 PAIRS = {
     "USDJPY": "JPY=X",
     "AUDUSD": "AUDUSD=X",
+    "GBPUSD": "GBPUSD=X",
 }
 
 

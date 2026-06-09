@@ -6,8 +6,9 @@ tasks:
   build:
     cmds:
       - task: amd
-        vars:
-          VERSION: latest
+      - task: arm
+      - docker buildx imagetools create -t ${REGISTRY}/${APP_NAME}:latest ${REGISTRY}/${APP_NAME}:amd ${REGISTRY}/${APP_NAME}:arm
+      - ssh ${REMOTE_HOST} "docker pull ${REGISTRY}/${APP_NAME}:latest"
       - say -v Samantha "The Docker build is complete."
 
   amd:
@@ -19,8 +20,8 @@ tasks:
           --builder ${AMD64_BUILDER} \
           --platform linux/amd64 \
           --build-arg apt_cacher=${APT_CACHER} \
-          --push -t ${REGISTRY}/${APP_NAME}:{{.VERSION}} .
-      - ssh ${REMOTE_HOST} "docker pull ${REGISTRY}/${APP_NAME}:{{.VERSION}}"
+          --push \
+          -t ${REGISTRY}/${APP_NAME}:amd .
     silent: true
 
   arm:
@@ -31,5 +32,10 @@ tasks:
         docker buildx build \
           --platform linux/arm64 \
           --build-arg apt_cacher=${APT_CACHER} \
-          --push -t ${REGISTRY}/${APP_NAME}:{{.VERSION}} .
+          --push \
+          -t ${REGISTRY}/${APP_NAME}:arm .
     silent: true
+
+  pos:
+    cmds:
+      - docker compose run --rm dev python position_analysis.py
