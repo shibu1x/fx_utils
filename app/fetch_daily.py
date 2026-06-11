@@ -12,9 +12,6 @@ import yfinance as yf
 
 PAIRS = {
     "USDJPY": "JPY=X",
-    "AUDUSD": "AUDUSD=X",
-    "NZDUSD": "NZDUSD=X",
-    "GBPUSD": "GBPUSD=X",
 }
 
 
@@ -72,10 +69,7 @@ def main():
     args = parser.parse_args()
 
     if args.pairs:
-        unknown = [p for p in args.pairs if p.upper() not in PAIRS]
-        if unknown:
-            parser.error(f"Unknown pairs: {', '.join(unknown)}. Choices: {', '.join(PAIRS.keys())}")
-        target_pairs = {p.upper(): PAIRS[p.upper()] for p in args.pairs}
+        target_pairs = {p.upper(): PAIRS.get(p.upper(), f"{p.upper()}=X") for p in args.pairs}
     else:
         target_pairs = PAIRS
 

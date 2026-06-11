@@ -8,7 +8,7 @@ tasks:
       - task: amd
       - task: arm
       - docker buildx imagetools create -t ${REGISTRY}/${APP_NAME}:latest ${REGISTRY}/${APP_NAME}:amd ${REGISTRY}/${APP_NAME}:arm
-      - ssh ${REMOTE_HOST} "docker pull ${REGISTRY}/${APP_NAME}:latest"
+      - ssh ${DEPLOY_HOST} "docker pull ${REGISTRY}/${APP_NAME}:latest"
       - say -v Samantha "The Docker build is complete."
 
   amd:
@@ -19,7 +19,6 @@ tasks:
         docker buildx build \
           --builder ${AMD64_BUILDER} \
           --platform linux/amd64 \
-          --build-arg apt_cacher=${APT_CACHER} \
           --push \
           -t ${REGISTRY}/${APP_NAME}:amd .
     silent: true
@@ -31,7 +30,6 @@ tasks:
       - |
         docker buildx build \
           --platform linux/arm64 \
-          --build-arg apt_cacher=${APT_CACHER} \
           --push \
           -t ${REGISTRY}/${APP_NAME}:arm .
     silent: true
