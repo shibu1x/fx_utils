@@ -31,7 +31,7 @@ def round_center_pips(pips: int, grid_step: int) -> int:
     if grid_step == 5:
         return (pips // 5) * 5 + 2
     if grid_step == 4:
-        return (pips - 1) // 4 * 4 + 1
+        return (pips // 4) * 4 + 1
     if grid_step == 3:
         return (pips // 3) * 3
     return pips
