@@ -126,8 +126,8 @@ def calculate_grid(config: PairConfig, previous_date: str, previous_close: float
         date=previous_date,
         previous_close=previous_close,
         center_price=center_price,
-        sell_range_pips=base_pips - adjustment_pips,
-        buy_range_pips=base_pips + adjustment_pips,
+        sell_range_pips=max(0, base_pips - adjustment_pips),
+        buy_range_pips=max(0, base_pips + adjustment_pips),
     )
 
 
