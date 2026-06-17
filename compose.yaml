@@ -1,6 +1,6 @@
 services:
   dev:
-    # docker compose run --rm dev /bin/bash
+    # docker compose run --rm dev python generate_grid_settings.py
     image: ${REGISTRY}/fx-utils:dev
     build:
       context: ./app
@@ -9,10 +9,10 @@ services:
       DISCORD_WEBHOOK_URL:
       PAIRS: USDJPY,GBPUSD
       USDJPY_ACCOUNTS: exness:0.07,ic_markets:0.03:false
+      USDJPY_GRID_STEP_PIPS: 3
+      USDJPY_GRID_RANGE: 0.6
       USDJPY_GRID_CENTER_ADJUSTMENT: 1
-      USDJPY_GRID_RANGE: 1
-      USDJPY_GRID_CENTER_MAX: 160
-      USDJPY_GRID_CENTER_MIN: 152
+      USDJPY_GRID_CENTER_MAX: 165
       GBPUSD_ACCOUNTS: exness:0.03
       GBPUSD_MAGIC_NUMBER: 8003
       GBPUSD_GRID_STEP_PIPS: 5

@@ -73,6 +73,11 @@ class PairConfig:
     center_min: float | None
     accounts: list[Account]
 
+    def __post_init__(self) -> None:
+        if abs(self.center_adjustment) > self.grid_range:
+            sign = 1 if self.center_adjustment >= 0 else -1
+            self.center_adjustment = sign * self.grid_range
+
     @classmethod
     def from_env(cls, pair: str) -> "PairConfig":
         p = pair.upper()
