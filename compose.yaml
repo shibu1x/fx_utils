@@ -1,6 +1,6 @@
 services:
   dev:
-    # docker compose run --rm dev python generate_grid_settings.py
+    # docker compose run --rm dev python grid_settings.py
     image: ${REGISTRY}/fx-utils:dev
     build:
       context: ./app

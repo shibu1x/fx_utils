@@ -6,8 +6,7 @@ tasks:
   build:
     cmds:
       - task: amd
-      - task: arm
-      - docker buildx imagetools create -t ${REGISTRY}/${APP_NAME}:latest ${REGISTRY}/${APP_NAME}:amd ${REGISTRY}/${APP_NAME}:arm
+      - docker buildx imagetools create -t ${REGISTRY}/${APP_NAME}:latest ${REGISTRY}/${APP_NAME}:amd
       - ssh ${DEPLOY_HOST} "docker pull ${REGISTRY}/${APP_NAME}:latest"
       - say -v Samantha "The Docker build is complete."
 
@@ -33,7 +32,3 @@ tasks:
           --push \
           -t ${REGISTRY}/${APP_NAME}:arm .
     silent: true
-
-  pos:
-    cmds:
-      - docker compose run --rm dev python position_analysis.py

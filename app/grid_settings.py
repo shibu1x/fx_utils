@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate MT4/MT5 EA grid .set files for multiple FX pairs from fx_daily.db."""
+"""Generate MT4/MT5 EA grid .set files for multiple FX pairs from fx_utils.db."""
 
 import os
 import sqlite3
@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import date
 
 
-DB_PATH = "/data/db/fx_daily.db"
+DB_PATH = "/data/db/fx_utils.db"
 OUTPUT_DIR = "/data/output/sets"
 
 
@@ -157,7 +157,7 @@ def write_set_file(config: PairConfig, account: Account, result: GridResult) -> 
 def process_pair(conn: sqlite3.Connection, config: PairConfig) -> None:
     today = date.today().isoformat()
     row = conn.execute(
-        "SELECT date, close FROM fx_daily WHERE pair = ? AND date < ? ORDER BY date DESC LIMIT 1",
+        "SELECT date, close FROM price_history WHERE pair = ? AND date < ? ORDER BY date DESC LIMIT 1",
         (config.pair, today),
     ).fetchone()
     if not row:

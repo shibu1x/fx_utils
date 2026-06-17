@@ -4,6 +4,7 @@ Fetch daily close price for multiple FX pairs (USD/JPY, AUD/USD, NZD/USD, GBP/US
 """
 
 import argparse
+import math
 import os
 import sqlite3
 from datetime import datetime, timedelta
@@ -17,9 +18,12 @@ PAIRS = {
 
 def create_table(conn):
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS fx_daily (
+        CREATE TABLE IF NOT EXISTS price_history (
             pair TEXT NOT NULL,
             date TEXT NOT NULL,
+            open REAL NOT NULL,
+            high REAL NOT NULL,
+            low REAL NOT NULL,
             close REAL NOT NULL,
             PRIMARY KEY (pair, date)
         )
@@ -27,28 +31,36 @@ def create_table(conn):
     conn.commit()
 
 
-def fetch_daily(ticker_symbol, start=None):
+def fetch_daily(ticker_symbol):
     ticker = yf.Ticker(ticker_symbol)
-    if start is None:
-        start = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
+    start = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
     data = ticker.history(start=start, interval="1d")
     return data
 
 
+def truncate(value, decimals):
+    factor = 10 ** decimals
+    return math.floor(value * factor) / factor
+
+
 def save_to_sqlite(pair, data, conn):
+    decimals = 3 if "JPY" in pair else 5
     cursor = conn.cursor()
     for index, row in data.iterrows():
         date_str = index.strftime("%Y-%m-%d")
         cursor.execute(
             """
-            INSERT OR REPLACE INTO fx_daily
-            (pair, date, close)
-            VALUES (?, ?, ?)
+            INSERT OR REPLACE INTO price_history
+            (pair, date, open, high, low, close)
+            VALUES (?, ?, ?, ?, ?, ?)
         """,
             (
                 pair,
                 date_str,
-                float(row["Close"]),
+                truncate(float(row["Open"]), decimals),
+                truncate(float(row["High"]), decimals),
+                truncate(float(row["Low"]), decimals),
+                truncate(float(row["Close"]), decimals),
             ),
         )
     conn.commit()
@@ -59,12 +71,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="Fetch daily FX OHLC data from Yahoo Finance"
     )
-    parser.add_argument("--start", type=str, help="Start date (YYYY-MM-DD)")
     parser.add_argument(
         "pairs",
         nargs="*",
         metavar="PAIR",
-        help=f"Pairs to fetch (default: all). Choices: {', '.join(PAIRS.keys())}",
+        help=f"Pairs to fetch (default: {', '.join(PAIRS.keys())}). Any pair is accepted (e.g. AUDJPY).",
     )
     args = parser.parse_args()
 
@@ -74,14 +85,14 @@ def main():
         target_pairs = PAIRS
 
     os.makedirs("/data/db", exist_ok=True)
-    conn = sqlite3.connect("/data/db/fx_daily.db")
+    conn = sqlite3.connect("/data/db/fx_utils.db")
 
     try:
         create_table(conn)
 
         for pair, ticker_symbol in target_pairs.items():
             print(f"Fetching {pair} ({ticker_symbol})...")
-            data = fetch_daily(ticker_symbol, start=args.start)
+            data = fetch_daily(ticker_symbol)
             if data.empty:
                 print(f"  No data returned")
                 continue
