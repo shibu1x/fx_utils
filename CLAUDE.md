@@ -31,7 +31,7 @@ All variables are pair-prefixed (`{PAIR}` = `USDJPY`, `AUDJPY`, `AUDUSD`, `GBPUS
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PAIRS` | _(required)_ | Comma-separated list of pairs to process |
-| `{PAIR}_ACCOUNTS` | _(none)_ | `name:lot[:sell_enabled]` comma-separated; controls output dirs |
+| `{PAIR}_ACCOUNTS` | _(none)_ | `name:lot[:direction]` comma-separated; direction: `long`, `short`, `both` (default: `both`); controls output dirs |
 | `{PAIR}_MAGIC_NUMBER` | `8001` | Magic number for the grid EA |
 | `{PAIR}_GRID_STEP_PIPS` | `5` | Grid step size in pips |
 | `{PAIR}_GRID_CENTER_ADJUSTMENT` | `0` | % adjustment to previous close for center price |

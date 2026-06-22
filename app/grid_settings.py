@@ -50,7 +50,7 @@ def env_val(key: str, default, cast):
 class Account:
     name: str
     lot: float
-    sell_enabled: bool = True
+    direction: str = "both"  # "long", "short", or "both"
 
     @classmethod
     def parse(cls, entry: str) -> "Account | None":
@@ -58,8 +58,11 @@ class Account:
         if len(parts) < 2:
             print(f"Warning: Invalid account entry '{entry}', skipping")
             return None
-        sell_enabled = parts[2].lower() not in ("false", "0", "no") if len(parts) >= 3 else True
-        return cls(name=parts[0], lot=float(parts[1]), sell_enabled=sell_enabled)
+        direction = parts[2].lower() if len(parts) >= 3 else "both"
+        if direction not in ("long", "short", "both"):
+            print(f"Warning: Invalid direction '{direction}' in '{entry}', defaulting to 'both'")
+            direction = "both"
+        return cls(name=parts[0], lot=float(parts[1]), direction=direction)
 
 
 @dataclass
@@ -142,10 +145,10 @@ def write_set_file(config: PairConfig, account: Account, result: GridResult) -> 
         f"MagicNumber={config.magic_number}\n"
         f"GridCenterPrice={format_price(result.center_price, config.pair)}\n"
         f"; === Sell Grid Settings ===\n"
-        f"SellEnabled={'true' if account.sell_enabled else 'false'}\n"
+        f"SellEnabled={'false' if account.direction == 'long' else 'true'}\n"
         f"SellRangePips={result.sell_range_pips}\n"
         f"; === Buy Grid Settings ===\n"
-        f"BuyEnabled=true\n"
+        f"BuyEnabled={'false' if account.direction == 'short' else 'true'}\n"
         f"BuyRangePips={result.buy_range_pips}\n"
     )
     os.makedirs(os.path.dirname(path), exist_ok=True)

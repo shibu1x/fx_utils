@@ -8,7 +8,7 @@ services:
     environment:
       DISCORD_WEBHOOK_URL:
       PAIRS: USDJPY,GBPUSD
-      USDJPY_ACCOUNTS: exness:0.07,ic_markets:0.03:false
+      USDJPY_ACCOUNTS: exness:0.07,ic_markets:0.03:long
       USDJPY_GRID_STEP_PIPS: 3
       USDJPY_GRID_RANGE: 0.6
       USDJPY_GRID_CENTER_ADJUSTMENT: 1
