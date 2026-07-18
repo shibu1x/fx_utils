@@ -134,8 +134,6 @@ def write_set_file(config: PairConfig, account: Account, result: GridResult) -> 
     content = (
         f"; === Basic Settings ===\n"
         f"GridStepPips={config.grid_step_pips}\n"
-        f"UseTakeProfit=true\n"
-        f"UseStopOrders=false\n"
         f"LotSize={account.lot}\n"
         f"MagicNumber={config.magic_number}\n"
         f"GridCenterPrice={format_price(result.center_price, config.pair)}\n"
