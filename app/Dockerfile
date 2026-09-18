@@ -1,0 +1,17 @@
+FROM python:3.14-slim
+
+# Set environment variables for non-interactive installations
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+COPY . .
+
+RUN python -m compileall -f .
+
+ENTRYPOINT ["python"]
